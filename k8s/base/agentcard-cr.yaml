@@ -1,0 +1,32 @@
+# AgentCard Custom Resource for Kagenti runtime verification
+# This CR tells the Kagenti operator to:
+# 1. Fetch the agent card from the agent's well-known endpoint
+# 2. Verify the JWS signature against the SPIRE trust bundle
+# 3. Check identity binding (SPIFFE ID vs trust domain)
+# 4. Apply labels and optionally NetworkPolicies based on verification
+apiVersion: agent.kagenti.dev/v1alpha1
+kind: AgentCard
+metadata:
+  name: weather-agent
+  namespace: kagenti-demo
+  labels:
+    app.kubernetes.io/name: weather-agent
+    kagenti.io/demo: "sigstore-kagenti"
+spec:
+  # Reference to the workload backing this agent
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: weather-agent
+  
+  # How often to re-fetch and verify the agent card
+  syncPeriod: "30s"
+  
+  # Identity binding configuration for SPIFFE verification
+  identityBinding:
+    # Trust domain for SPIFFE ID validation
+    # Leave empty to use operator-level default
+    trustDomain: ""
+    # strict: true = reject if identity doesn't match
+    # strict: false = audit mode (log but don't reject)
+    strict: false

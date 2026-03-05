@@ -1,0 +1,45 @@
+{
+  "protocolVersion": "0.2.9",
+  "name": "Weather Service Agent",
+  "description": "Provides real-time weather data, forecasts, and climate analysis. Supports multiple locations and integrates with various weather data sources.",
+  "url": "http://weather-agent.default.svc.cluster.local:8000",
+  "preferredTransport": "JSONRPC",
+  "provider": {
+    "organization": "Kagenti Demo",
+    "url": "https://kagenti.io"
+  },
+  "version": "0.0.1-alpha.3",
+  "capabilities": {
+    "streaming": false,
+    "pushNotifications": false,
+    "stateTransitionHistory": false
+  },
+  "defaultInputModes": ["application/json", "text/plain"],
+  "defaultOutputModes": ["application/json"],
+  "skills": [
+    {
+      "id": "get-current-weather",
+      "name": "Get Current Weather",
+      "description": "Retrieves current weather conditions for a specified location including temperature, humidity, wind speed, and conditions.",
+      "tags": ["weather", "current", "temperature"],
+      "examples": [
+        "What's the weather in San Francisco?",
+        "Current temperature in New York"
+      ],
+      "inputModes": ["application/json", "text/plain"],
+      "outputModes": ["application/json"]
+    },
+    {
+      "id": "get-forecast",
+      "name": "Get Weather Forecast",
+      "description": "Provides weather forecast for upcoming days for a specified location.",
+      "tags": ["weather", "forecast", "prediction"],
+      "examples": [
+        "What's the 5-day forecast for Seattle?",
+        "Will it rain tomorrow in Boston?"
+      ],
+      "inputModes": ["application/json", "text/plain"],
+      "outputModes": ["application/json"]
+    }
+  ]
+}

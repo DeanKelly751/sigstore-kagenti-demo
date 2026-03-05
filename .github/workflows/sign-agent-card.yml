@@ -1,0 +1,106 @@
+# Copyright 2025 The Sigstore Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+name: Sign Agent Card
+
+on:
+  push:
+    branches: [main]
+    paths: ['agent-cards/*.json', '!agent-cards/*.signed.json']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  id-token: write  # Required for Sigstore OIDC token
+
+jobs:
+  sign-agent-card:
+    name: Sign and Verify Agent Card
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install UV package manager
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+      - name: Install sigstore-a2a
+        run: |
+          git clone https://github.com/sigstore/sigstore-a2a.git sigstore-a2a-repo
+          cd sigstore-a2a-repo
+          uv sync --prerelease=allow
+
+      - name: Sign Agent Card
+        run: |
+          cd sigstore-a2a-repo
+          uv run sigstore-a2a sign \
+            ../agent-cards/weather-agent-card.json \
+            --output ../agent-cards/weather-agent-card.signed.json \
+            --repository ${{ github.repository }} \
+            --provenance
+
+      - name: Verify signature
+        run: |
+          cd sigstore-a2a-repo
+          uv run sigstore-a2a verify \
+            ../agent-cards/weather-agent-card.signed.json \
+            --identity "https://github.com/${{ github.repository }}/.github/workflows/sign-agent-card.yml@refs/heads/main" \
+            --identity_provider "https://token.actions.githubusercontent.com" \
+            --repository ${{ github.repository }} \
+            --workflow "Sign Agent Card"
+
+      - name: Display signing information
+        run: |
+          echo "============================================"
+          echo "Agent Card signed successfully with Sigstore!"
+          echo "============================================"
+          echo "Repository: ${{ github.repository }}"
+          echo "Workflow: ${{ github.workflow }}"
+          echo "Commit SHA: ${{ github.sha }}"
+          echo "Actor: ${{ github.actor }}"
+          echo "Event: ${{ github.event_name }}"
+          echo ""
+          echo "Signed card preview:"
+          cat agent-cards/weather-agent-card.signed.json | head -50
+
+      - name: Upload signed Agent Card as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: signed-agent-card
+          path: agent-cards/weather-agent-card.signed.json
+          retention-days: 90
+
+      - name: Commit signed Agent Card
+        if: github.event_name == 'push'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add agent-cards/weather-agent-card.signed.json
+          git diff --staged --quiet || git commit -m "chore: Update signed Agent Card
+
+          Automatically signed Agent Card with Sigstore.
+
+          Repository: ${{ github.repository }}
+          Workflow: ${{ github.workflow }}
+          Commit SHA: ${{ github.sha }}
+          Actor: ${{ github.actor }}"
+          git push
