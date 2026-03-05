@@ -49,6 +49,13 @@ jobs:
           cd sigstore-a2a-repo
           uv sync --prerelease=allow
 
+      - name: Get OIDC Token
+        id: oidc
+        run: |
+          OIDC_TOKEN=$(curl -sLS "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=sigstore" \
+            -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" | jq -r '.value')
+          echo "token=${OIDC_TOKEN}" >> $GITHUB_OUTPUT
+
       - name: Sign Agent Card
         run: |
           cd sigstore-a2a-repo
@@ -57,7 +64,7 @@ jobs:
             --output ../agent-cards/weather-agent-card.signed.json \
             --repository ${{ github.repository }} \
             --provenance \
-            --use_ambient_credentials
+            --identity_token "${{ steps.oidc.outputs.token }}"
 
       - name: Verify signature
         run: |
