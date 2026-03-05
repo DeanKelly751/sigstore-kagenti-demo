@@ -56,7 +56,8 @@ jobs:
             ../agent-cards/weather-agent-card.json \
             --output ../agent-cards/weather-agent-card.signed.json \
             --repository ${{ github.repository }} \
-            --provenance
+            --provenance \
+            --oidc-issuer https://token.actions.githubusercontent.com
 
       - name: Verify signature
         run: |
